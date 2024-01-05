@@ -266,4 +266,5 @@ def main():
 
 if __name__ == "__main__":
     DIR = './ActiveTransformers-for-AbusiveLanguage'
+    DIR = './'
     main()

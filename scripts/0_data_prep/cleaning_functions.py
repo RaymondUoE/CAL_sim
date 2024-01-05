@@ -22,7 +22,7 @@ def clean_text(text):
     # replace mentions, URLs and emojis with special token
     text = re.sub(r"@[A-Za-z0-9_-]+",'[USER]',text)
     text = re.sub(r"http\S+",'[URL]',text)
-    text = ''.join(' [EMOJI] ' if (char in emoji.UNICODE_EMOJI) else char for char in text).strip()
+    text = ''.join(' [EMOJI] ' if (char in emoji.EMOJI_DATA) else char for char in text).strip()
     # in Samory dataset there are mentions e.g. MENTION3851 --> convert to USER tokens
     text = re.sub("MENTION[0-9]*", '[USER]', text)
     # remove newline and tab characters
