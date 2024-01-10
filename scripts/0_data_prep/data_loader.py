@@ -235,6 +235,12 @@ def main():
             base_train, base_test = load_wiki(f'{DIR}/data/Wulczyn2017')
         elif DATASET == 'tweets':
             base_train, base_test = load_tweets(f'{DIR}/data/Founta2018')
+        # ---added by C.Wang---
+        base_test.to_csv(f'{DIR}/data/{DATASET}/train_original_split.csv', index = False)
+        base_train.to_csv(f'{DIR}/data/{DATASET}/test_original_split.csv', index = False)
+        # ---------------------
+         
+        
         # Load keywords
         print('\n---Loading Keywords---')
         f = open(f"{DIR}/data/keywords.txt", "r")
@@ -253,7 +259,7 @@ def main():
         # Use threshold of 0.05
         base_train = calc_kw_label(base_train, 0.05)
         # Save base datasets
-        base_test.to_csv(f'{DIR}/data/{DATASET}/train_base.csv', index = True)
+        base_test.to_csv(f'{DIR}/data/{DATASET}/test_base.csv', index = True)
         base_train.to_csv(f'{DIR}/data/{DATASET}/train_base.csv', index = True)
         # Create artifical test sets
         class_sampler_with_budget(
