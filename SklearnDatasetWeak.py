@@ -8,6 +8,8 @@ import numpy as np
 
 from abc import ABC
 from scipy.sparse import issparse
+from scipy.sparse import csr_matrix
+
 
 from small_text.data.exceptions import UnsupportedOperationException
 from small_text.data.sampling import stratified_sampling, balanced_sampling
@@ -107,7 +109,35 @@ class DatasetView(Dataset):
     @y.setter
     def y(self, y):
         raise UnsupportedOperationException('Cannot set y on a DatasetView')
+    
+    @property
+    def yweak(self):
+        """Returns the weak labels.
+        Returns
+        -------
+        yweak : numpy.ndarray
+            List of labels.
+        """
+        return self._dataset.yweak[self.selection]
 
+    @y.setter
+    def yweak(self, yweak):
+        raise UnsupportedOperationException('Cannot set yweak on a DatasetView')
+
+    @property
+    def track_target_labels(self):
+        """Returns track_target_labels.
+        Returns
+        -------
+        track_target_labels : bool
+            whether target labels are tracked.
+        """
+        return self._dataset.track_target_labels
+
+    @track_target_labels.setter
+    def track_target_labels(self, track_target_labels):
+        raise UnsupportedOperationException('Cannot set track_target_labels on a DatasetView')
+    
     @property
     def target_labels(self):
         """Returns a list of possible labels.
@@ -127,6 +157,37 @@ class DatasetView(Dataset):
 
     def __len__(self):
         return self._dataset.x[self.selection].shape[0]
+    
+    def clone(self):
+        if isinstance(self.x, csr_matrix):
+            x = self.x.copy()
+        else:
+            x = np.copy(self.x)
+
+        if isinstance(self.y, csr_matrix):
+            y = self.y.copy()
+        else:
+            y = np.copy(self.y)
+        
+        if isinstance(self.y, csr_matrix):
+            yweak = self.yweak.copy()
+        else:
+            yweak = np.copy(self.yweak)
+
+        dataset = self
+        while hasattr(dataset, 'dataset'):
+            dataset = dataset.dataset
+        print('here')
+        print(dataset)
+        if dataset.track_target_labels:
+            target_labels = None
+        else:
+            target_labels = np.copy(dataset._target_labels)
+
+        return SklearnDatasetWeak(x,
+                              y,
+                              yweak,
+                              target_labels=target_labels)
 
 
 class SklearnDatasetWeak(Dataset):

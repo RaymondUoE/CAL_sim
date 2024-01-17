@@ -8,7 +8,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 from small_text.data import SklearnDataset
 from TransformersDatasetWeak import TransformersDatasetWeak
-from SklearnDatasetWeak import SklearnDatasetWeak
+# from SklearnDatasetWeak import SklearnDatasetWeak
+from SklearnDatasetWeakMod import SklearnDatasetWeak
 
 
 def data_loader(args):

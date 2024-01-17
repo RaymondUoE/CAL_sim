@@ -4,3 +4,4 @@ __pycache__/
 .gitignore
 .ipynb_checkpoints/
 contrastive_addition/temp/
+results/
