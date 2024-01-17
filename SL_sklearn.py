@@ -16,12 +16,12 @@ def parse_args():
     parser.add_argument('--method', type = str, metavar ="", default = 'SL', help="Supervised == SL or Active == AL")
     parser.add_argument('--framework', type = str, metavar ="", default = 'SK', help="Transformers == TF or SkLearn == SK")
     parser.add_argument('--datadir', type = str, metavar ="",default = './data/', help="Path to directory with data files")
-    parser.add_argument('--dataset', type = str, metavar ="",default = 'attacks', help="Name of dataset")
+    parser.add_argument('--dataset', type = str, metavar ="",default = 'wiki', help="Name of dataset")
     parser.add_argument('--outdir', type = str, metavar ="",default = './results/', help="Path to output directory for storing results")
     parser.add_argument('--sklearn_model', type = str, metavar ="",default = 'ConfidenceEnhancedLinearSVC', help="Name of SkLearn model")
     parser.add_argument('--class_imbalance', type = int, metavar ="", default = 50, help = 'Class imbalance desired in train dataset')
-    parser.add_argument('--train_n', type = int, metavar ="", default = 1000, help = 'Total number of training examples')
-    parser.add_argument('--test_n', type = int, metavar ="", default = 1000, help = 'Total number of testing examples')
+    parser.add_argument('--train_n', type = int, metavar ="", default = 20000, help = 'Total number of training examples')
+    parser.add_argument('--test_n', type = int, metavar ="", default = 5000, help = 'Total number of testing examples')
     parser.add_argument('--run_n', type = int, metavar ="", default = 5, help = 'Number of times to run each model')
     args=parser.parse_args()
     print("the inputs are:")
@@ -36,7 +36,7 @@ def main():
     train_df, test_dfs = data_loader(args)
     # Prepare experiment model and data
     clf_template = ConfidenceEnhancedLinearSVC()
-    clf_factory = SklearnClassifierFactory(clf_template)
+    clf_factory = SklearnClassifierFactory(clf_template, num_classes=2)
     train_dict = df_to_dict('train', train_df)
     train, vectorizer = preprocess_data_sklearn_train(train_dict['data'],
                                                       train_dict['target'],

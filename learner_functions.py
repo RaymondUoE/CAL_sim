@@ -100,7 +100,7 @@ def initialize_learner(learner, train, test_sets, args):
         else:
             val_indices = None
         print('Initialising learner')
-        learner.initialize_data(x_indices_initial, y_initial, x_indices_validation=val_indices)
+        learner.initialize_data(x_indices_initial, y_initial, indices_validation=val_indices)
         print('Learner initalized ok.')
     # SL Set-Up: for supervised args.init_n = total_n
     else:
@@ -123,7 +123,9 @@ def initialize_learner(learner, train, test_sets, args):
         else:
             val_indices = None
         print('Initialising learner')
-        learner.initialize_data(x_indices_initial, y_initial, x_indices_validation=val_indices)
+        # print(train)
+        # print(val_indices)
+        learner.initialize_data(x_indices_initial, y_initial, indices_validation=val_indices)
         print('Learner initalized ok.')
     print('Evaluation step')
     iter_results_dict[int(0)], iter_preds_dict[int(0)] = evaluate(learner,

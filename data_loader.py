@@ -226,7 +226,8 @@ def class_sampler_with_budget(DATASET, split, df, col='label', neg_pcts = [0.95,
             output_df.to_csv(f'{DIR}/data/{DATASET}/{split}_{save_val}.csv')
 
 def main():
-    for DATASET in ['wiki', 'tweets']:
+    # for DATASET in ['wiki', 'tweets']:
+    for DATASET in ['wiki']:
         directory = f'{DIR}/data/{DATASET}'
         if not os.path.exists(directory):
             os.makedirs(directory)
