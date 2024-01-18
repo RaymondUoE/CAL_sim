@@ -254,7 +254,7 @@ def main():
         base_train = return_kw_matches(base_train, kw_list)
         # Check varied thresholds
         print('\n---Evaluating Thresholds---')
-        for t in [0.01, 0.05, 0.1, 0.25]:
+        for t in [0.01, 0.02, 0.05, 0.07, 0.1, 0.25]:
             base_train_t = calc_kw_label(base_train, t)
             eval_kw_threshold(base_train_t, t)
         # Use threshold of 0.05

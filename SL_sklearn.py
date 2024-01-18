@@ -38,7 +38,7 @@ def main():
     clf_template = ConfidenceEnhancedLinearSVC()
     clf_factory = SklearnClassifierFactory(clf_template, num_classes=2)
     train_dict = df_to_dict('train', train_df)
-    print(train_df.head())
+    # print(train_df.head())
     train, vectorizer = preprocess_data_sklearn_train(train_dict['data'],
                                                       train_dict['target'],
                                                       train_dict['weak_target'])

@@ -16,6 +16,7 @@ try:
 except ModuleNotFoundError:
     raise PytorchNotFoundError('Could not import torchtext')
 
+from small_text.integrations.transformers.datasets import TransformersDataset
 
 class TransformersDatasetWeak(PytorchDataset):
     """
