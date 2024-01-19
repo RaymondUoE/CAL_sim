@@ -120,11 +120,14 @@ def initialize_learner(learner, train, test_sets, args):
                                                           int(0.1*len(indices_neg_label)),
                                                           replace=False)
                                           ])
+            # print(learner)
+            # print(y_initial)
+            # print(val_indices)
         else:
             val_indices = None
         print('Initialising learner')
-        # print(train)
-        # print(val_indices)
+        print('here..')
+        print(y_initial.shape)
         learner.initialize_data(x_indices_initial, y_initial, indices_validation=val_indices)
         print('Learner initalized ok.')
     print('Evaluation step')

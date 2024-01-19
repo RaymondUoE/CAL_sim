@@ -7,8 +7,9 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 from small_text.data import SklearnDataset
-from TransformersDatasetWeak import TransformersDatasetWeak
+# from TransformersDatasetWeak import TransformersDatasetWeak
 # from SklearnDatasetWeak import SklearnDatasetWeak
+from TransformersDatasetWeakMod import TransformersDatasetWeak
 from SklearnDatasetWeakMod import SklearnDatasetWeak
 
 

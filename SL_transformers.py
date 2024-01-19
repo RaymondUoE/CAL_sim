@@ -41,7 +41,7 @@ def main():
     clf_factory = TransformerBasedClassificationFactory(TRANSFORMER_MODEL,
                                                     2,
                                                     args.n_epochs,
-                                                    kwargs = dict({'device': 'cuda'}))
+                                                    kwargs = dict({'device': 'mps'}))
     tokenizer = AutoTokenizer.from_pretrained(TRANSFORMER_MODEL.model, cache_dir='.cache/')    
     tokenizer.add_special_tokens({'additional_special_tokens': ["[URL]", "[EMOJI]", "[USER]"]})
     train_dict = df_to_dict('train', train_df)
