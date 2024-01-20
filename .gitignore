@@ -6,3 +6,4 @@ __pycache__/
 contrastive_addition/temp/
 results/
 *cache/
+02-active-learning-with-stopping-criteria.ipynb

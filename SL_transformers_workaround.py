@@ -25,7 +25,7 @@ class TextDataset(Dataset):
         item['labels'] = torch.tensor(self.labels[idx])
         return item
         
-def _genenrate_val_indices(labels):
+def genenrate_val_indices(labels):
     indices_neg_label = np.where(labels == 0)[0]
     indices_pos_label = np.where(labels == 1)[0]
     all_indices = np.concatenate([indices_neg_label, indices_pos_label])
@@ -89,6 +89,8 @@ def main():
             seed_value = run
             random.seed(seed_value)
             np.random.seed(seed_value)
+            torch.manual_seed(seed_value)
+            
             print(f'----RUN {run}: {args.method} LEARNER----')
             print(f'----Seed: {seed_value}----')
             
@@ -96,7 +98,7 @@ def main():
             tokenizer.add_special_tokens({'additional_special_tokens': ["[URL]", "[EMOJI]", "[USER]"]})
             train_dict = df_to_dict('train', train_df)
             train_full = dict_to_torch_dataset(train_dict, tokenizer)
-            val_indices = _genenrate_val_indices(train_dict['target'])
+            val_indices = genenrate_val_indices(train_dict['target'])
             indices = np.arange(len(train_dict['target']))
             val_mask = np.isin(indices, val_indices)
             train_indices = indices[~val_mask]
