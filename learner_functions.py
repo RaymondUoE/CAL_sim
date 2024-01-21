@@ -149,7 +149,7 @@ def perform_active_learning(active_learner, train, test_sets, labeled_indices, i
     if str(active_learner.query_strategy) in embedding_strategies:
         print('Calculating embeddings')
         embeddings, proba = active_learner.classifier.embed(train, return_proba=True)
-    while len(labeled_indices) + args.query_n < 2000:
+    while len(labeled_indices) + args.query_n < args.labelling_budget:
         if str(active_learner.query_strategy) in embedding_strategies:
             print('Using embeddings')
             q_indices = active_learner.query(num_samples=args.query_n,
@@ -172,7 +172,7 @@ def perform_active_learning(active_learner, train, test_sets, labeled_indices, i
         print(f'Used indices: {len(labeled_indices)}')
         print(f'Remaining indices: {len(train)-len(labeled_indices)}')
     # Final batch of remaining indices
-    query_n_final = 2000 - len(labeled_indices)
+    query_n_final = args.labelling_budget - len(labeled_indices)
     print(f'Final round: {query_n_final}')
     q_indices = active_learner.query(num_samples=query_n_final)
     y = train.y[q_indices]

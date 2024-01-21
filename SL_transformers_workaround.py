@@ -1,16 +1,17 @@
 # ----Author: Chunlu Wang----
 import argparse
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
-from preprocess import data_loader, df_to_dict
-import numpy as np
 import torch
-from torch.utils.data import Subset
 import random
-from evaluation import compute_metrics_acc_f1
 import json
 import logging
+import os
+import numpy as np
 from datetime import datetime
+from transformers import AutoTokenizer
+from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+from torch.utils.data import Subset
+from preprocess import data_loader, df_to_dict
+from evaluation import compute_metrics_acc_f1
 from dataset_utils import genenrate_val_indices, dict_to_torch_dataset
 
 def parse_args():
@@ -38,6 +39,8 @@ def main():
     current_datetime = datetime.now()
     args=parse_args()
     EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.dataset}_{args.class_imbalance}_{args.train_n}'
+    if not os.path.exists(EXP_DIR):
+        os.makedirs(EXP_DIR)
     output = {}
     for arg in vars(args):
         output[arg] = getattr(args, arg)

@@ -1,12 +1,18 @@
 # ----Author: Chunlu Wang----
-import numpy as np
 import argparse
 import torch
 import json
 import logging
 import random
+import os
+import numpy as np
 
 from transformers import AutoTokenizer
+from datetime import datetime
+from preprocess import data_loader, df_to_dict
+from evaluation import evaluate
+from learner_functions import perform_active_learning
+from dataset_utils import genenrate_start_indices, dict_to_transformer_dataset
 
 from small_text import (
     EmptyPoolException,
@@ -20,14 +26,11 @@ from small_text.query_strategies.strategies import (QueryStrategy,
                                                     ConfidenceBasedQueryStrategy,
                                                     LeastConfidence,
                                                     EmbeddingBasedQueryStrategy,
-                                                    EmbeddingKMeans)
-from preprocess import data_loader, df_to_dict
+                                                    EmbeddingKMeans,
+                                                    ContrastiveActiveLearning)
 from small_text.integrations.transformers.classifiers.classification import TransformerModelArguments
 from small_text.integrations.transformers.classifiers.factories import TransformerBasedClassificationFactory
-from evaluation import evaluate
-from learner_functions import perform_active_learning
-from dataset_utils import genenrate_start_indices, dict_to_transformer_dataset
-from datetime import datetime
+
 
 def parse_args():
     parser=argparse.ArgumentParser(description="Active Learning Experiment Runner with Transformers Integration")
@@ -39,14 +42,15 @@ def parse_args():
     parser.add_argument('--transformer_model', type = str, metavar ="",default = 'distilbert-base-uncased', help="Name of HuggingFace transformer model")
     parser.add_argument('--n_epochs', type = int, metavar ="",default =  5, help = "Number of epochs for model training")
     parser.add_argument('--batch_size', type = int, metavar ="", default = 16, help = 'Number of samples per batch')
-    parser.add_argument('--eval_steps', type = int, metavar ="", default = 20000, help = 'Evaluation after a number of training steps')
+    # parser.add_argument('--eval_steps', type = int, metavar ="", default = 20000, help = 'Evaluation after a number of training steps')
     parser.add_argument('--class_imbalance', type = int, metavar ="", default = 50, help = 'Class imbalance desired in train dataset')
     parser.add_argument('--init_n', type = int, metavar ="", default = 20, help = 'Initial batch size for training')
-    parser.add_argument('--cold_strategy', metavar ="", default = 'BalancedWeak', help = 'Method of cold start to select initial examples')
-    parser.add_argument('--query_n', type = int, metavar ="", default = 100, help = 'Batch size per active learning query for training')
+    parser.add_argument('--cold_strategy', metavar ="", default = 'BalancedRandom', help = 'Method of cold start to select initial examples')
+    parser.add_argument('--query_n', type = int, metavar ="", default = 50, help = 'Batch size per active learning query for training')
     parser.add_argument('--query_strategy', metavar ="", default = 'LeastConfidence()', help = 'Method of active learning query for training')
-    parser.add_argument('--train_n', type = int, metavar ="", default = 20000, help = 'Total number of training examples')
-    parser.add_argument('--test_n', type = int, metavar ="", default = 5000, help = 'Total number of testing examples')
+    parser.add_argument('--train_n', type = int, metavar ="", default = 200, help = 'Total number of training examples')
+    parser.add_argument('--test_n', type = int, metavar ="", default = 50, help = 'Total number of testing examples')
+    parser.add_argument('--labelling_budget', type = int, metavar ="", default = 200, help = 'Total number of labelled examples. Must <= train_n')
     parser.add_argument('--run_n', type = int, metavar ="", default = 5, help = 'Number of times to run each model')
     args=parser.parse_args()
     print("the inputs are:")
@@ -59,6 +63,8 @@ def main():
     args=parse_args()
     args.framework = 'TF'
     EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.dataset}_{args.class_imbalance}_{args.train_n}'
+    if not os.path.exists(EXP_DIR):
+        os.makedirs(EXP_DIR)
     output = {}
     for arg in vars(args):
         output[arg] = getattr(args, arg)
@@ -131,7 +137,7 @@ def main():
                                                                                         iter_results_dict,
                                                                                         iter_preds_dict,
                                                                                         args)
-            # return active_learner, indices_initial, iter_results_dict, iter_preds_dict
+            
             active_learner.save(f'{EXP_DIR}/model_run{run}_{current_datetime}.pkl')
             results_dict[f'run_{run}'] = iter_results_dict
             current_datetime = datetime.now()

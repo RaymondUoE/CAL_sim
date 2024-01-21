@@ -1,8 +1,7 @@
 # ----Author: Chunlu Wang----
-from torch.utils.data import Dataset 
-import numpy as np
 import torch
-
+import numpy as np
+from torch.utils.data import Dataset 
 from small_text.integrations.transformers.datasets import TransformersDataset
 
 class TextDataset(Dataset):
