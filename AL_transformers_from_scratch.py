@@ -1,6 +1,10 @@
+# ----Author: Chunlu Wang----
 import numpy as np
 import argparse
 import torch
+import json
+import logging
+import random
 
 from transformers import AutoTokenizer
 
@@ -17,76 +21,13 @@ from small_text.query_strategies.strategies import (QueryStrategy,
                                                     LeastConfidence,
                                                     EmbeddingBasedQueryStrategy,
                                                     EmbeddingKMeans)
-from learner_functions import run_multiple_experiments
-from preprocess import (data_loader,
-                        df_to_dict)
-from SL_transformers_workaround import genenrate_val_indices
+from preprocess import data_loader, df_to_dict
 from small_text.integrations.transformers.classifiers.classification import TransformerModelArguments
 from small_text.integrations.transformers.classifiers.factories import TransformerBasedClassificationFactory
-from small_text.integrations.transformers.datasets import TransformersDataset
 from evaluation import evaluate
 from learner_functions import perform_active_learning
-
-def _genenrate_start_indices(train_dict, args):
-    if args.cold_strategy =='TrueRandom':
-        indices_neg_label = np.where(train_dict['target'] == 0)[0]
-        indices_pos_label = np.where(train_dict['target'] == 1)[0]
-        all_indices = np.concatenate([indices_neg_label, indices_pos_label])
-        x_indices_initial = np.random.choice(all_indices,
-                                            args.init_n,
-                                            replace=False)
-    # Balanced Random Choice Based on Known Class label
-    elif args.cold_strategy == 'BalancedRandom': 
-        indices_neg_label = np.where(train_dict['target'] == 0)[0]
-        indices_pos_label = np.where(train_dict['target'] == 1)[0]
-        selected_neg_label = np.random.choice(indices_neg_label,
-                                                int(args.init_n/2),
-                                                replace=False)
-        selected_pos_label = np.random.choice(indices_pos_label,
-                                                int(args.init_n/2),
-                                                replace=False)
-        x_indices_initial = np.concatenate([selected_neg_label, selected_pos_label])
-    # Balanced Random Choice Based on Keywords (Weak label)
-    elif args.cold_strategy == 'BalancedWeak': 
-        indices_neg_label = np.where(train_dict['weak_target'] == 0)[0]
-        indices_pos_label = np.where(train_dict['weak_target'] == 1)[0]
-        if len(indices_pos_label) > int(args.init_n/2):
-            selected_neg_label = np.random.choice(indices_neg_label,
-                                                    int(args.init_n/2),
-                                                    replace=False)
-            selected_pos_label = np.random.choice(indices_pos_label,
-                                                    int(args.init_n/2),
-                                                    replace=False)
-        # If limit reached, take as many positive as possible and pad with negatives
-        else:
-            selected_pos_label = np.random.choice(indices_pos_label,
-                                                    len(indices_pos_label),
-                                                    replace=False)
-            selected_neg_label = np.random.choice(indices_neg_label,
-                                                    int(args.init_n) - len(indices_pos_label),
-                                                    replace=False)
-        x_indices_initial = np.concatenate([selected_neg_label, selected_pos_label])
-    else:
-        print('Invalid Cold Start Policy')
-    # Set x and y initial
-    x_indices_initial = x_indices_initial.astype(int)
-    y_initial = np.array([train_dict['target'][i] for i in x_indices_initial])
-    print('y selected', train_dict['target'][x_indices_initial])
-    print(f'Starting imbalance (train): {np.round(np.mean(y_initial),4)}')
-    # Set validation indices for transformers framework
-    val_indices = genenrate_val_indices(y_initial)
-    
-    return x_indices_initial, y_initial, val_indices
-
-def dict_to_transformer_dataset(data_dict, tokenizer):
-    encodings = tokenizer(data_dict['data'], truncation=True, padding=True)
-    return TransformersDataset(
-        [(torch.tensor(input_ids).reshape(1, -1), torch.tensor(attention_mask).reshape(1, -1), labels) 
-         for input_ids, attention_mask, labels in 
-              zip(encodings['input_ids'], encodings['attention_mask'], data_dict['target'])
-              ]
-        )
-    
+from dataset_utils import genenrate_start_indices, dict_to_transformer_dataset
+from datetime import datetime
 
 def parse_args():
     parser=argparse.ArgumentParser(description="Active Learning Experiment Runner with Transformers Integration")
@@ -114,59 +55,112 @@ def parse_args():
     return args
 
 def main():
+    current_datetime = datetime.now()
     args=parse_args()
     args.framework = 'TF'
-    # Load data
+    EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.dataset}_{args.class_imbalance}_{args.train_n}'
+    output = {}
+    for arg in vars(args):
+        output[arg] = getattr(args, arg)
+        
+    logging.basicConfig(filename=f"{EXP_DIR}/log.txt",level=logging.DEBUG)
+    logging.captureWarnings(True)
+    logf = open(f"{EXP_DIR}/err.log", "w")
+    with open(f'{EXP_DIR}/START_{current_datetime}.json', 'w') as fp:
+        json.dump(output, fp)
+        
+    # Try running experiment
+    try:
+        results_dict = {}
+        predictions_dict = {}
+        # Load data
+        train_df, test_dfs = data_loader(args)
+        for run in range(args.run_n):
+            seed_value = run
+            random.seed(seed_value)
+            np.random.seed(seed_value)
+            torch.manual_seed(seed_value)
+            
+            print(f'----RUN {run}: {args.method} LEARNER----')
+            print(f'----Seed: {seed_value}----')
+        
+            tokenizer = AutoTokenizer.from_pretrained(args.transformer_model, cache_dir='.cache/')    
+            tokenizer.add_special_tokens({'additional_special_tokens': ["[URL]", "[EMOJI]", "[USER]"]})
+            
+            test_datasets = {}
+            matching_indexes = {}
+            for j in test_dfs.keys():
+                matching_indexes[j] = test_dfs[j].index.tolist()
+                data_dict = df_to_dict('test', test_dfs[j])
+                processed_data = dict_to_transformer_dataset(data_dict, tokenizer)
+                test_datasets[j] = processed_data
+            
+            train_dict = df_to_dict('train', train_df)
+            indices_initial, y_initial, val_indices = genenrate_start_indices(train_dict, args)
 
-    
-    tokenizer = AutoTokenizer.from_pretrained(args.transformer_model, cache_dir='.cache/')    
-    tokenizer.add_special_tokens({'additional_special_tokens': ["[URL]", "[EMOJI]", "[USER]"]})
-    train_df, test_dfs = data_loader(args)
-    test_datasets = {}
-    matching_indexes = {}
-    for j in test_dfs.keys():
-        matching_indexes[j] = test_dfs[j].index.tolist()
-        data_dict = df_to_dict('test', test_dfs[j])
-        processed_data = dict_to_transformer_dataset(data_dict, tokenizer)
-        test_datasets[j] = processed_data
-    
-    train_dict = df_to_dict('train', train_df)
-    indices_initial, y_initial, val_indices = _genenrate_start_indices(train_dict, args)
+            train_trans_dataset = dict_to_transformer_dataset(train_dict, tokenizer)
+            
+            transformer_model = TransformerModelArguments(args.transformer_model)
+            clf_factory = TransformerBasedClassificationFactory(transformer_model,
+                                                                num_classes=2,
+                                                                kwargs={
+                                                                    'device': 'mps', 
+                                                                    'num_epochs': args.n_epochs,
+                                                                    'mini_batch_size': args.batch_size,
+                                                                    'class_weight': 'balanced'
+                                                                })
+            query_strategy = eval(args.query_strategy)
+            active_learner = PoolBasedActiveLearner(clf_factory, query_strategy, train_trans_dataset)
 
-    train_trans_dataset = dict_to_transformer_dataset(train_dict, tokenizer)
-    
-    transformer_model = TransformerModelArguments(args.transformer_model)
-    clf_factory = TransformerBasedClassificationFactory(transformer_model,
-                                                        num_classes=2,
-                                                        kwargs={
-                                                            'device': 'mps', 
-                                                            'num_epochs': args.n_epochs,
-                                                            'mini_batch_size': args.batch_size,
-                                                            'class_weight': 'balanced'
-                                                        })
-    query_strategy = eval(args.query_strategy)
-    active_learner = PoolBasedActiveLearner(clf_factory, query_strategy, train_trans_dataset)
-
-    print('\n----Initalising----\n')
-    iter_results_dict = {}
-    iter_preds_dict = {}
-    indices_labeled = active_learner.initialize_data(indices_initial, y_initial, indices_validation=val_indices)
-    print('Learner initalized ok.')
-    
-    print('Evaluation step')
-    iter_results_dict[int(0)], iter_preds_dict[int(0)] = evaluate(active_learner,
-                                                                  train_trans_dataset[indices_initial],
-                                                                  test_datasets,
-                                                                  indices_initial)
-    
-    active_learner, iter_results_dict, iter_preds_dict = perform_active_learning(active_learner,
-                                                                                train_trans_dataset,
-                                                                                test_datasets,
-                                                                                indices_initial,
-                                                                                iter_results_dict,
-                                                                                iter_preds_dict,
-                                                                                args)
-    return active_learner, indices_initial, iter_results_dict, iter_preds_dict
+            print('\n----Initalising----\n')
+            iter_results_dict = {}
+            iter_preds_dict = {}
+            indices_labeled = active_learner.initialize_data(indices_initial, y_initial, indices_validation=val_indices)
+            print('Learner initalized ok.')
+            
+            print('Evaluation step')
+            iter_results_dict[int(0)], iter_preds_dict[int(0)] = evaluate(active_learner,
+                                                                        train_trans_dataset[indices_initial],
+                                                                        test_datasets,
+                                                                        indices_initial)
+            
+            active_learner, iter_results_dict, iter_preds_dict = perform_active_learning(active_learner,
+                                                                                        train_trans_dataset,
+                                                                                        test_datasets,
+                                                                                        indices_initial,
+                                                                                        iter_results_dict,
+                                                                                        iter_preds_dict,
+                                                                                        args)
+            # return active_learner, indices_initial, iter_results_dict, iter_preds_dict
+            active_learner.save(f'{EXP_DIR}/model_run{run}_{current_datetime}.pkl')
+            results_dict[f'run_{run}'] = iter_results_dict
+            current_datetime = datetime.now()
+            with open(f'{EXP_DIR}/results_run{run}_{current_datetime}.json', 'w') as fp:
+                json.dump(results_dict, fp)
+            predictions_dict[f'run_{run}'] = iter_preds_dict
+        # Save predictions and indexes to map back to original dataframe text
+        predictions_dict['indexes'] = matching_indexes
+        with open(f'{EXP_DIR}/predictions.json', 'w') as fp:
+            json.dump(predictions_dict, fp)
+        # Log time
+        current_datetime = datetime.now()
+        # Save output
+        output['results_dict'] = results_dict
+        output['Error_Code'] = 'NONE'
+        with open(f'{EXP_DIR}/END_{current_datetime}.json', 'w') as fp:
+            json.dump(output, fp)
+        print('Finished with no errors!')
+        logf.write("No errors!")
+        
+    # Catch errors
+    except Exception as e:
+        print(e)
+        logf.write(f"time: {current_datetime}, error: {e}")
+        # Reset params_dict
+        output[arg] = getattr(args, arg)
+        output['Error_Code'] = str(e)
+        with open(f'{EXP_DIR}/FAILED_{current_datetime}.json', 'w') as fp:
+            json.dump(output, fp)
 
     
 

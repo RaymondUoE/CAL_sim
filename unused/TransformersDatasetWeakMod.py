@@ -1,3 +1,5 @@
+# ----Author: Chunlu Wang----
+# Updated to support weak labels under small-text 1.3.3 , but is eventually not used.
 import numpy as np
 
 from scipy.sparse import csr_matrix

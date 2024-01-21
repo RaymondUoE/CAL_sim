@@ -1,5 +1,5 @@
 # ------ Author: Chunlu Wang -------
-
+# Updated to support weak labels under small-text 1.3.3
 """SklearnDatasetWeak
 
 Modified small_text dataset class to allow for true and weak labels.

@@ -1,51 +1,17 @@
+# ----Author: Chunlu Wang----
 import argparse
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
 from preprocess import data_loader, df_to_dict
 import numpy as np
 import torch
-from torch.utils.data import Dataset, Subset
+from torch.utils.data import Subset
 import random
 from evaluation import compute_metrics_acc_f1
 import json
 import logging
 from datetime import datetime
-
-class TextDataset(Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
-        
-    def __len__(self):
-            return len(self.labels)
-        
-    def __getitem__(self, idx):
-        
-        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
-        
-def genenrate_val_indices(labels):
-    indices_neg_label = np.where(labels == 0)[0]
-    indices_pos_label = np.where(labels == 1)[0]
-    all_indices = np.concatenate([indices_neg_label, indices_pos_label])
-    np.random.shuffle(all_indices)
-    x_indices_initial = all_indices.astype(int)
-    y_initial = np.array([labels[i] for i in x_indices_initial])
-    print(f'Starting imbalance: {np.round(np.mean(y_initial),2)}')
-    print('Setting val indices')
-    
-    return np.concatenate([np.random.choice(indices_pos_label, 
-                                            int(0.1*len(indices_pos_label)),
-                                            replace=False),
-                            np.random.choice(indices_neg_label,
-                                            int(0.1*len(indices_neg_label)),
-                                            replace=False)
-                            ])
-    
-def dict_to_torch_dataset(data_dict, tokenizer):
-    encodings = tokenizer(data_dict['data'], truncation=True, padding=True)
-    return TextDataset(encodings, data_dict['target'])
+from dataset_utils import genenrate_val_indices, dict_to_torch_dataset
 
 def parse_args():
     parser=argparse.ArgumentParser(description="Supervised Learning Experiment Runner with Transformers Integration")

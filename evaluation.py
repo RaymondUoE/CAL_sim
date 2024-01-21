@@ -29,6 +29,7 @@ def evaluate(active_learner, train, test_sets, labeled_indices):
     return results_dict, pred_arrays
 
 # Function used by Huggingface Trainer
+# ----Author: Chunlu Wang----
 def compute_metrics_acc_f1(p):
     return {'accuracy': accuracy_score(p.predictions.argmax(axis=1), p.label_ids),
             'f1-score': f1_score(p.label_ids, p.predictions.argmax(axis=1), average='macro')}
