@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--datadir', type = str, metavar ="",default = './data/', help="Path to directory with data files")
     parser.add_argument('--dataset', type = str, metavar ="",default = 'wiki', help="Name of dataset")
     parser.add_argument('--outdir', type = str, metavar ="",default = './results/', help="Path to output directory for storing results")
-    parser.add_argument('--transformer_model', type = str, metavar ="",default = 'distilbert-base-uncased', help="Name of HuggingFace transformer model")
+    parser.add_argument('--transformer_model', type = str, metavar ="",default = 'distilroberta-base', help="Name of HuggingFace transformer model")
     parser.add_argument('--n_epochs', type = int, metavar ="",default =  5, help = "Number of epochs for model training")
     parser.add_argument('--batch_size', type = int, metavar ="", default = 16, help = 'Number of samples per batch')
     # parser.add_argument('--eval_steps', type = int, metavar ="", default = 20000, help = 'Evaluation after a number of training steps')
@@ -47,10 +47,10 @@ def parse_args():
     parser.add_argument('--init_n', type = int, metavar ="", default = 20, help = 'Initial batch size for training')
     parser.add_argument('--cold_strategy', metavar ="", default = 'BalancedRandom', help = 'Method of cold start to select initial examples')
     parser.add_argument('--query_n', type = int, metavar ="", default = 50, help = 'Batch size per active learning query for training')
-    parser.add_argument('--query_strategy', metavar ="", default = 'LeastConfidence()', help = 'Method of active learning query for training')
-    parser.add_argument('--train_n', type = int, metavar ="", default = 200, help = 'Total number of training examples')
-    parser.add_argument('--test_n', type = int, metavar ="", default = 50, help = 'Total number of testing examples')
-    parser.add_argument('--labelling_budget', type = int, metavar ="", default = 200, help = 'Total number of labelled examples. Must <= train_n')
+    parser.add_argument('--query_strategy', metavar ="", default = 'ContrastiveActiveLearning()', help = 'Method of active learning query for training')
+    parser.add_argument('--train_n', type = int, metavar ="", default = 20000, help = 'Total number of training examples')
+    parser.add_argument('--test_n', type = int, metavar ="", default = 5000, help = 'Total number of testing examples')
+    parser.add_argument('--labelling_budget', type = int, metavar ="", default = 2000, help = 'Total number of labelled examples. Must <= train_n')
     parser.add_argument('--run_n', type = int, metavar ="", default = 5, help = 'Number of times to run each model')
     args=parser.parse_args()
     print("the inputs are:")
@@ -91,8 +91,9 @@ def main():
             print(f'----Seed: {seed_value}----')
         
             tokenizer = AutoTokenizer.from_pretrained(args.transformer_model, cache_dir='.cache/')    
+            # print(len(tokenizer))
             tokenizer.add_special_tokens({'additional_special_tokens': ["[URL]", "[EMOJI]", "[USER]"]})
-            
+            # print(len(tokenizer))
             test_datasets = {}
             matching_indexes = {}
             for j in test_dfs.keys():
@@ -110,14 +111,20 @@ def main():
             clf_factory = TransformerBasedClassificationFactory(transformer_model,
                                                                 num_classes=2,
                                                                 kwargs={
-                                                                    'device': 'mps', 
+                                                                    'device': 'cuda', 
                                                                     'num_epochs': args.n_epochs,
                                                                     'mini_batch_size': args.batch_size,
                                                                     'class_weight': 'balanced'
                                                                 })
+            if 'ContrastiveActiveLearning' in args.query_strategy:
+                query_strategy = ContrastiveActiveLearning(
+                    embed_kwargs={
+                        "embedding_method":"cls",
+                    }
+                )
             query_strategy = eval(args.query_strategy)
             active_learner = PoolBasedActiveLearner(clf_factory, query_strategy, train_trans_dataset)
-
+            
             print('\n----Initalising----\n')
             iter_results_dict = {}
             iter_preds_dict = {}

@@ -21,11 +21,11 @@ def parse_args():
     parser.add_argument('--datadir', type = str, metavar ="",default = './data/', help="Path to directory with data files")
     parser.add_argument('--dataset', type = str, metavar ="",default = 'wiki', help="Name of dataset")
     parser.add_argument('--outdir', type = str, metavar ="",default = './results/', help="Path to output directory for storing results")
-    parser.add_argument('--transformer_model', type = str, metavar ="",default = 'distilbert-base-uncased', help="Name of HuggingFace transformer model")
+    parser.add_argument('--transformer_model', type = str, metavar ="",default = 'distilroberta-base', help="Name of HuggingFace transformer model")
     parser.add_argument('--n_epochs', type = int, metavar ="",default = 5, help = "Number of epochs for model training")
     parser.add_argument('--class_imbalance', type = int, metavar ="", default = 50, help = 'Class imbalance desired in train dataset')
     parser.add_argument('--batch_size', type = int, metavar ="", default = 16, help = 'Number of samples per batch')
-    parser.add_argument('--eval_steps', type = int, metavar ="", default = 20000, help = 'Evaluation after a number of training steps')
+    parser.add_argument('--eval_steps', type = int, metavar ="", default = 1250, help = 'Evaluation after a number of training steps')
     parser.add_argument('--train_n', type = int, metavar ="", default = 20000, help = 'Total number of training examples')
     parser.add_argument('--test_n', type = int, metavar ="", default = 5000, help = 'Total number of testing examples')
     parser.add_argument('--run_n', type = int, metavar ="", default = 5, help = 'Number of times to run each model')
@@ -38,7 +38,7 @@ def parse_args():
 def main():
     current_datetime = datetime.now()
     args=parse_args()
-    EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.dataset}_{args.class_imbalance}_{args.train_n}'
+    EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.transformer_model}_{args.dataset}_{args.class_imbalance}_{args.train_n}'
     if not os.path.exists(EXP_DIR):
         os.makedirs(EXP_DIR)
     output = {}
@@ -74,7 +74,7 @@ def main():
 
             train_dataset = Subset(train_full, train_indices)
             val_dataset = Subset(train_full, val_indices)
-            
+            # print(train_indices.size)
             test_datasets = {}
             matching_indexes = {}
             for j in test_dfs.keys():
@@ -84,6 +84,7 @@ def main():
                 test_datasets[j] = processed_data
             
             model = AutoModelForSequenceClassification.from_pretrained(args.transformer_model, num_labels=2)  # Assuming binary classification
+            model.resize_token_embeddings(new_num_tokens=len(tokenizer))
             training_args = TrainingArguments(
                 output_dir=EXP_DIR,
                 num_train_epochs=args.n_epochs,
@@ -99,7 +100,7 @@ def main():
                 save_strategy='steps',
                 save_steps=args.eval_steps,
                 save_total_limit=1,
-                max_steps=2
+                # max_steps=2
             )
 
             # create Trainer and Train the model

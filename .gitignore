@@ -7,3 +7,5 @@ contrastive_addition/temp/
 results/
 *cache/
 02-active-learning-with-stopping-criteria.ipynb
+learning from the worst.ipynb
+keywords*.txt
