@@ -237,8 +237,8 @@ def main():
         elif DATASET == 'tweets':
             base_train, base_test = load_tweets(f'{DIR}/data/Founta2018')
         # ---added by C.Wang---
-        base_test.to_csv(f'{DIR}/data/{DATASET}/train_original_split.csv', index = False)
-        base_train.to_csv(f'{DIR}/data/{DATASET}/test_original_split.csv', index = False)
+        base_train.to_csv(f'{DIR}/data/{DATASET}/train_original_split.csv', index = False)
+        base_test.to_csv(f'{DIR}/data/{DATASET}/test_original_split.csv', index = False)
         # ---------------------
          
         
