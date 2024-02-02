@@ -149,6 +149,7 @@ def perform_active_learning(active_learner, train, test_sets, labeled_indices, i
     if str(active_learner.query_strategy) in embedding_strategies:
         print('Calculating embeddings')
         embeddings, proba = active_learner.classifier.embed(train, return_proba=True)
+    indices_tracker = {0: labeled_indices.tolist()}
     while len(labeled_indices) + args.query_n < args.labelling_budget:
         if str(active_learner.query_strategy) in embedding_strategies:
             print('Using embeddings')
@@ -156,6 +157,7 @@ def perform_active_learning(active_learner, train, test_sets, labeled_indices, i
                                             query_strategy_kwargs = dict({'embeddings':embeddings}))
         else:
             q_indices = active_learner.query(num_samples=args.query_n)
+        indices_tracker[i] = q_indices.tolist()  
         # Simulate user interaction here. Replace this for real-world usage.
         y = train.y[q_indices]
         # Return the label for the current query to the active learner.
@@ -175,6 +177,7 @@ def perform_active_learning(active_learner, train, test_sets, labeled_indices, i
     query_n_final = args.labelling_budget - len(labeled_indices)
     print(f'Final round: {query_n_final}')
     q_indices = active_learner.query(num_samples=query_n_final)
+    indices_tracker[i] = q_indices.tolist()   
     y = train.y[q_indices]
     active_learner.update(y)
     labeled_indices = np.concatenate([q_indices, labeled_indices])
@@ -189,7 +192,7 @@ def perform_active_learning(active_learner, train, test_sets, labeled_indices, i
     print(f'Used indices: {len(labeled_indices)}')
     print(f'Remaining indices: {len(train)-len(labeled_indices)}')
     print('Budget is exhausted!')
-    return active_learner, iter_results_dict, iter_preds_dict 
+    return active_learner, iter_results_dict, iter_preds_dict, indices_tracker
 
 def run_AL(clf_factory, train, test_sets, args):
     """Runs full active learning process with initialisation and iterations."""
