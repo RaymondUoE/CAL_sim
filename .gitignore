@@ -9,3 +9,5 @@ results/
 02-active-learning-with-stopping-criteria.ipynb
 learning from the worst.ipynb
 keywords*.txt
+contrastive_addition/0_preprocessing/preprocessed_explain.csv
+contrastive_addition/0_preprocessing/preprocessed_learning.csv

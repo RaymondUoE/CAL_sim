@@ -25,13 +25,13 @@ def main():
     #     json.dump(inverse_stem_lookup, f)
     # f.close()
 
-    print(f'---Writing keywords to {KEYWORDS_PATH}/keywords.txt')
-    with open(f'{KEYWORDS_PATH}/keywords.txt', 'w') as f:
-        f.write('\n'.join(out_dict[1]))
-    f.close()
+    # print(f'---Writing keywords to {KEYWORDS_PATH}/keywords.txt')
+    # with open(f'{KEYWORDS_PATH}/keywords.txt', 'w') as f:
+    #     f.write('\n'.join(out_dict[1]))
+    # f.close()
 
 if __name__ == "__main__":
     DATA_PATH = '../../data/wiki'
     KEYWORDS_PATH = '../../data'
-    OUT_DIR = '..'
+    OUT_DIR = './'
     main()
