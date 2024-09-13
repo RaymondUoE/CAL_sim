@@ -244,7 +244,7 @@ def main():
         
         # Load keywords
         print('\n---Loading Keywords---')
-        f = open(f"{DIR}/data/keywords.txt", "r")
+        f = open(f"{DIR}/data/keywords_kirk.txt", "r")
         content = f.read()
         kw_list = content.splitlines()
         f.close()
@@ -257,8 +257,8 @@ def main():
         for t in [0.01, 0.02, 0.05, 0.07, 0.1, 0.25]:
             base_train_t = calc_kw_label(base_train, t)
             eval_kw_threshold(base_train_t, t)
-        # Use threshold of 0.05
-        base_train = calc_kw_label(base_train, 0.05)
+        # Use threshold of 0.01
+        base_train = calc_kw_label(base_train, 0.01)
         # Save base datasets
         base_test.to_csv(f'{DIR}/data/{DATASET}/test_base.csv', index = True)
         base_train.to_csv(f'{DIR}/data/{DATASET}/train_base.csv', index = True)

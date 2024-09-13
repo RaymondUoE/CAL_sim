@@ -45,9 +45,9 @@ def parse_args():
     # parser.add_argument('--eval_steps', type = int, metavar ="", default = 20000, help = 'Evaluation after a number of training steps')
     parser.add_argument('--class_imbalance', type = int, metavar ="", default = 50, help = 'Class imbalance desired in train dataset')
     parser.add_argument('--init_n', type = int, metavar ="", default = 20, help = 'Initial batch size for training')
-    parser.add_argument('--cold_strategy', metavar ="", default = 'BalancedRandom', help = 'Method of cold start to select initial examples')
+    parser.add_argument('--cold_strategy', metavar ="", default = 'BalancedWeak', help = 'Method of cold start to select initial examples')
     parser.add_argument('--query_n', type = int, metavar ="", default = 50, help = 'Batch size per active learning query for training')
-    parser.add_argument('--query_strategy', metavar ="", default = 'LeastConfidence()', help = 'Method of active learning query for training')
+    parser.add_argument('--query_strategy', metavar ="", default = 'ContrastiveActiveLearning()', help = 'Method of active learning query for training')
     parser.add_argument('--train_n', type = int, metavar ="", default = 20000, help = 'Total number of training examples')
     parser.add_argument('--test_n', type = int, metavar ="", default = 5000, help = 'Total number of testing examples')
     parser.add_argument('--labelling_budget', type = int, metavar ="", default = 2000, help = 'Total number of labelled examples. Must <= train_n')
@@ -62,7 +62,7 @@ def main():
     current_datetime = datetime.now()
     args=parse_args()
     args.framework = 'TF'
-    EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.dataset}_{args.class_imbalance}_{args.train_n}_{args.query_strategy[:-2]}'
+    EXP_DIR = f'{args.outdir}/{args.method}_{args.framework}_{args.dataset}_{args.class_imbalance}_{args.train_n}_{args.query_strategy[:-2]}_{args.cold_strategy}'
     if not os.path.exists(EXP_DIR):
         os.makedirs(EXP_DIR)
     output = {}
